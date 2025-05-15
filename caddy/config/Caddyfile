@@ -1,0 +1,8 @@
+{  
+    email akulubala@gmail.com
+    log {
+        output stdout
+        format json
+    }
+}
+import sites/*

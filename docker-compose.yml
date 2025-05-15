@@ -1,0 +1,51 @@
+services:
+  n8n:
+    image: n8nio/n8n
+    user: "1000:1000"
+    container_name: n8n
+    restart: always
+    ports:
+      - 5678:5678
+    environment:
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/data/database.sqlite
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_ENCRYPTION_KEY=1234567890xxx
+      - GENERIC_TIMEZONE=Asia/Shanghai
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    volumes:
+      - ./n8n/data:/data
+      - ./uploads:/srv/uploads
+    networks:
+      - n8n-network
+    depends_on:
+      - caddy
+  caddy:
+    build:
+        context: ./caddy
+        dockerfile: Dockerfile
+    container_name: container_caddy
+    environment:
+        LC_ALL: en_US.UTF-8
+        LANG: en_US.UTF-8
+        TZ: Etc/GMT+8
+    networks:
+        - n8n-network
+    ports:
+        - "80:80"
+        - "443:443"
+        - "443:443/udp"
+    volumes:
+        - caddy_data:/data
+        - caddy_config:/config
+        - ./uploads:/srv/uploads
+networks:
+  n8n-network:
+    driver: bridge
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
