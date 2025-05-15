@@ -20,26 +20,23 @@ services:
       - ./uploads:/srv/uploads
     networks:
       - n8n-network
-    depends_on:
-      - caddy
-  python-ai:
-    image: ghcr.io/geekpii/document-extraction-ai_web-dev:latest
-    container_name: container_python_ai_booking_v2
+  python:
+    build: 
+      context: ./python
+      dockerfile: Dockerfile
+    container_name: container_python
     environment:
       LC_ALL: en_US.UTF-8
       LANG: en_US.UTF-8
       TZ: Etc/GMT+8
       V2_AI_ENV: /run/secrets/booking_v2_ai_env
-    secrets:
-      - booking_v2_ai_env
-    ports:
-      - "8001:8001"
-    networks:
-      - qc_v2_network_dev
     volumes:
-      - ./srv/document-extraction:/srv/document-extraction
-      - ./srv/booking_v2:/code/booking_v2
-    command: ["sh", "-c", "poetry run fastapi dev main.py --host 0.0.0.0 --port 8001"]
+      - ./python/srv:/srv
+    ports:
+      - "8000:8000"
+    networks:
+      - n8n-network
+    # command: tail -f /dev/null
   caddy:
     build:
         context: ./caddy
@@ -49,6 +46,9 @@ services:
         LC_ALL: en_US.UTF-8
         LANG: en_US.UTF-8
         TZ: Etc/GMT+8
+    depends_on:
+      - n8n
+      - python
     networks:
         - n8n-network
     ports:

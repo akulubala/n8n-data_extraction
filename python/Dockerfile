@@ -8,10 +8,6 @@ RUN apt-get update \
     && poetry config virtualenvs.in-project true --local \
     && poetry install --no-root;
 
-
-
-RUN chmod +x /usr/local/bin/init.sh
-
 WORKDIR /srv/fuzzy_match
 
 CMD ["poetry", "run", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
