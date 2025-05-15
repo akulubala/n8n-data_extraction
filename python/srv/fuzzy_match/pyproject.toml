@@ -9,7 +9,7 @@ readme = "README.md"
 python = "^3.13"
 fastapi = { extras = ["standard"], version = "^0.115.12" }
 thefuzz = "^0.22.1"
-sentence-transformers = {extras = ["onnx"], version = "^4.1.0"}
+sentence-transformers = {extras = ["onnx-gpu"], version = "^4.1.0"}
 hf-xet = "^1.1.1"
 
 [build-system]
