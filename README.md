@@ -29,6 +29,7 @@ curl --request POST \
 6. Fuzzy Match 使用docker service ”python“， 可参考python/srv/fuzzy_match 包。 借助sentence-transformers 实现
 
 7. 流程
-![Alt text](images/flow.png ) 
+
+![Image Description](./images/flow.png)
 
 8. 可直接导入根目录下LLM_____.json 测试
