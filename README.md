@@ -30,6 +30,6 @@ curl --request POST \
 
 7. 流程
 
-![Image Description](./images/flow.png)
+![Image Description](./images/example.png)
 
 8. 可直接导入根目录下LLM_____.json 测试
