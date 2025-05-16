@@ -1,0 +1,549 @@
+{
+  "name": "LLM 识别图片",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "89f67403-3d86-46b3-8056-463454cb7663",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2440,
+        -500
+      ],
+      "id": "2fc93945-c77b-483b-86a2-efbbcd8749de",
+      "name": "Webhook",
+      "webhookId": "89f67403-3d86-46b3-8056-463454cb7663"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\njson_string = _input.first().json.candidates[0].content.parts[0].text.split('```json\\n')[\n        1].split('```')[0]\njson_data = json.loads(json_string)\nreturn {\n  \"targets\": json_data\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1080,
+        -260
+      ],
+      "id": "148adcf8-6eff-48b8-893c-389bed2d00f9",
+      "name": "Response Structure Data"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=xxxx",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\"text\": \"提取图中的产品和数量,不要删除任何字符，json字符串形式输出,例如[{\\\"product\\\": \\\"product1\\\", \\\"quantity\\\": \\\"xxx\\\"}, {\\\"product\\\": \\\"product2\\\", \\\"quantity\\\": \\\"xxx\\\"}]，,如果数量不存在，默认给1\"},\n        {\n          \"inline_data\": {\n            \"mime_type\": \"{{ $json.mime_type }}\",\n            \"data\": \"{{ $json.data }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 1,\n    \"maxOutputTokens\": 65536\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1320,
+        -260
+      ],
+      "id": "85622756-cd74-4b3e-bfff-8c53e763fc68",
+      "name": "Gemini Extract Data"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -860,
+        -560
+      ],
+      "id": "c9fa1ef5-2ad0-43ba-8000-0d42d9175ed6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python:8000/matching",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"targets\": {{ JSON.stringify($input.last().json.targets.map(item => item)) }},\n  \"choices\": {{ JSON.stringify($input\n  .first()\n  .json\n  .filtered_choices\n  .map(item => item)) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        -560
+      ],
+      "id": "6c21cc57-6f22-411c-83a7-0f7661b8f7fb",
+      "name": "Sentance Fuzzy Match",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "fileType": "excel",
+        "worksheetName": ""
+      },
+      "type": "n8n-nodes-pdf-excel.pdfExcelProcessor",
+      "typeVersion": 1,
+      "position": [
+        -1700,
+        -700
+      ],
+      "id": "c7658cf3-14b1-4a6a-81d6-329b6bb89361",
+      "name": "PDF & Excel Processor"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"filtered_choices\":{{ $json.pdfResults.data.filter(item => Object.values(item).filter(it => it && it.length > 0).length > 0) }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1380,
+        -700
+      ],
+      "id": "d1bf8980-f400-4f02-a9a5-b331bbfac68b",
+      "name": "Filter Empty"
+    },
+    {
+      "parameters": {
+        "fromEmail": "akulubala@gmail.com",
+        "toEmail": "1099100926@qq.com",
+        "subject": "Lower Fuzzy Match Order",
+        "html": "=All Result:\n{{ $json.fuzzy_match_result.map(item => JSON.stringify(item)) }}\n\nLow Score Result:\n\n{{ $json.lower_score_result.map(item => JSON.stringify(item)) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -100,
+        -720
+      ],
+      "id": "2ba7d9df-d2e6-4c62-a6e6-d5d51ad58b6a",
+      "name": "Send Email",
+      "webhookId": "aae68510-d81f-4647-adc9-4b8574b92526",
+      "credentials": {
+        "smtp": {
+          "id": "E2qbTsYqpOFFfmjd",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"customer_name\": {{ JSON.stringify($('Webhook').item.json.body.customer_name) }},\n  \"order_date\": {{ JSON.stringify($now.format('yyyy-MM-dd')) }},\n  \"items\": {{ JSON.stringify($json.fuzzy_match_result.map(item => item)) }}\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -460,
+        -560
+      ],
+      "id": "8505310f-75c6-4a51-8002-cc2ba1b47013",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "docx",
+        "options": {
+          "encoding": "utf8"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1820,
+        -380
+      ],
+      "id": "ca30ebd4-0a03-4b46-b887-63bb298f8742",
+      "name": "Extract from image"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "docx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1820,
+        -120
+      ],
+      "id": "40c5f20d-d2d0-40fa-9b5a-687452129098",
+      "name": "Extract from pdf"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ae9cb06b-0767-4d26-85b4-48b81ff3a30c",
+              "name": "mime_type",
+              "value": "application/pdf",
+              "type": "string"
+            },
+            {
+              "id": "50b87340-5b47-4544-ad0d-08fd9076b5da",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        -120
+      ],
+      "id": "00ff2a12-92b6-4d9f-943b-28f119c6014e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8fb6ba4d-0c80-4567-8231-11105a59c0d7",
+              "name": "mime_type",
+              "value": "image/jpeg",
+              "type": "string"
+            },
+            {
+              "id": "b6bced9a-39fa-4d62-aae3-b3d08d26223f",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        -380
+      ],
+      "id": "8c5c3736-db5e-4175-b9b7-d2ddaa7b8edc",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/srv/uploads/source.xlsx",
+        "options": {
+          "fileExtension": ""
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -2100,
+        -700
+      ],
+      "id": "88dad82a-0a1c-4ef4-a416-a204c3c48716",
+      "name": "read choices list"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ [\"jpeg\", \"png\", \"jpg\"].includes($binary.docx.fileExtension) }}",
+                    "rightValue": "=",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "7b379ff2-1cc4-436b-b093-5a9976082876"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f79fbe76-2c62-4290-9c00-c5e4e44cb493",
+                    "leftValue": "={{ $binary.docx.fileExtension }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2140,
+        -280
+      ],
+      "id": "14acef33-4750-4029-aaf3-79c199c8c50e",
+      "name": "Prepare targets"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "82071104-529c-447f-986b-3d35a809ef61",
+              "leftValue": "={{ $json.lower_score_result.length == 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -280,
+        -560
+      ],
+      "id": "27ed34fb-a99d-4dfa-89ef-7af2e9f42bab",
+      "name": "send email if have lower score match"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare targets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "read choices list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Structure Data": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Gemini Extract Data": {
+      "main": [
+        [
+          {
+            "node": "Response Structure Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Sentance Fuzzy Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF & Excel Processor": {
+      "main": [
+        [
+          {
+            "node": "Filter Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Empty": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentance Fuzzy Match": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "send email if have lower score match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from image": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from pdf": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Gemini Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Gemini Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read choices list": {
+      "main": [
+        [
+          {
+            "node": "PDF & Excel Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare targets": {
+      "main": [
+        [
+          {
+            "node": "Extract from image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from pdf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send email if have lower score match": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "970e6887-3cd0-4847-9415-fa45afa96e8a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0be8e7866d1837b0778845d3ef9b80ed0a099fe5250ce4157720b21f16de5d1e"
+  },
+  "id": "M7xupoEHs1kNa9UV",
+  "tags": []
+}

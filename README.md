@@ -15,7 +15,7 @@ docker compose up -d
 
 4. 文件上传与访问
 
-上传的文件存放在 uploads/ 目录
+上传的產品清單存放在 uploads/ 目录
 可通过 http://localhost/uploads/<filename> 访问上传的文件
 
 5. webhooks 通过post 触发，
@@ -23,6 +23,12 @@ docker compose up -d
 curl --request POST \
   --url http://0.0.0.0:5678/webhook-test/89f67403-3d86-46b3-8056-463454cb7663 \
   --header 'Content-Type: multipart/form-data' \
-  --form docx=undefined
+  --form docx=undefined \ ## docx 作为文件上传名称
+  --form 'customer_name=Raymond Cheng' ## 客户名称
 
-上传xlsx 会作为fuzzy 比对数据源,上传pdf, image 会触发invoice 提取流程
+6. Fuzzy Match 使用docker service ”python“， 可参考python/srv/fuzzy_match 包。 借助sentence-transformers 实现
+
+7. 流程
+![alt text](flow.png)
+
+8. 可直接导入根目录下LLM_____.json 测试
