@@ -1,7 +1,9 @@
 services:
   n8n:
-    image: n8nio/n8n
-    user: "1000:1000"
+    image: n8n-invoice-agent-n8n:latest
+    build: 
+      context: ./n8n
+      dockerfile: Dockerfile
     container_name: n8n
     restart: always
     ports:
