@@ -1,44 +1,44 @@
-## 快速开始
+## Quick Start
 
-### 1. 克隆仓库
+### 1. Clone the Repository
 
 ```bash
 git clone git@github.com:akulubala/n8n-data_extraction.git
 cd n8n-data_extraction
 ```
 
-### 2. 配置环境变量
+### 2. Configure Environment Variables
 
-编辑 `.env` 文件，设置所需的环境变量（如 `GEMINI_KEY`）。
+Edit the `.env` file and set the required environment variables (e.g., `GEMINI_KEY`).
 
-### 3. 启动服务
+### 3. Start the Service
 
 ```bash
 docker compose up -d
 ```
 
-### 4. 文件上传与访问
+### 4. File Upload and Access
 
-- 上传的產品清單存放在 `uploads/` 目录
-- 可通过 `http://localhost/uploads/<filename>` 访问上传的文件
+- Uploaded product lists are stored in the `uploads/` directory.
+- You can access uploaded files via `http://localhost/uploads/<filename>`.
 
-### 5. webhooks 通过 POST 触发
+### 5. Trigger Webhooks via POST
 
 ```bash
 curl --request POST \
   --url http://0.0.0.0:5678/webhook-test/89f67403-3d86-46b3-8056-463454cb7663 \
   --header 'Content-Type: multipart/form-data' \
-  --form 'docx=@yourfile.docx' \ # docx 作为文件上传名称
-  --form 'customer_name=Raymond Cheng' # 客户名称
+  --form 'docx=@yourfile.docx' \ # 'docx' is the file upload field name
+  --form 'customer_name=Raymond Cheng' # Customer name
 ```
 
 ### 6. Fuzzy Match
 
-- 使用 docker service "python"，可参考 `python/srv/fuzzy_match` 包。
-- 借助 sentence-transformers 实现。
+- Use the "python" docker service, refer to the `python/srv/fuzzy_match` package.
+- Implemented with sentence-transformers.
 
-### 7. 流程
+### 7. Workflow
 
 ![Image Description](./images/example.png)
 
-### 8. 可直接导入根目录下 `LLM_____.json` 测试
+### 8. You can directly import `LLM_____.json` in the root directory for testing.
