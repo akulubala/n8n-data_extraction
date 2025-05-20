@@ -1,3 +1,7 @@
 .env
 uploads
 n8n/data/*
+.vscode
+caddy/config/production
+caddy/config/staging
+__pycache__/*

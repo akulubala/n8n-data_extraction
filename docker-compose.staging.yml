@@ -1,0 +1,72 @@
+services:
+  n8n:
+    image: n8n-invoice-agent-n8n:latest
+    build: 
+      context: ./n8n
+      dockerfile: Dockerfile
+    container_name: n8n
+    restart: always
+    ports:
+      - 5678:5678
+    environment:
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/data/database.sqlite
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_ENCRYPTION_KEY=1234567890xxx
+      - GENERIC_TIMEZONE=Asia/Shanghai
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    volumes:
+      - ./n8n/data:/data
+      - ./uploads:/srv/uploads
+    networks:
+      - n8n-network
+    # command: tail -f /dev/null
+  python:
+    build: 
+      context: ./python
+      dockerfile: Dockerfile
+    container_name: container_python
+    environment:
+      LC_ALL: en_US.UTF-8
+      LANG: en_US.UTF-8
+      TZ: Etc/GMT+8
+      V2_AI_ENV: /run/secrets/booking_v2_ai_env
+    volumes:
+      - ./python/srv:/srv
+    ports:
+      - "8000:8000"
+    networks:
+      - n8n-network
+    # command: tail -f /dev/null
+  caddy:
+    build:
+        context: ./caddy
+        dockerfile: Dockerfile
+    container_name: container_caddy
+    environment:
+        LC_ALL: en_US.UTF-8
+        LANG: en_US.UTF-8
+        TZ: Etc/GMT+8
+    depends_on:
+      - n8n
+      - python
+    networks:
+        - n8n-network
+    ports:
+        - "80:80"
+        - "443:443"
+        - "443:443/udp"
+    volumes:
+        - caddy_data:/data
+        - ./caddy/config/staging/data_extraction.conf:/etc/caddy/sites/data_extraction.conf
+        - ./uploads:/srv/uploads
+networks:
+  n8n-network:
+    driver: bridge
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
